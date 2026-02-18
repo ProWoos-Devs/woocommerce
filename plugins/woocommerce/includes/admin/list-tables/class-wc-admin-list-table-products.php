@@ -358,6 +358,7 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 				'product_category' => array( $this, 'render_products_category_filter' ),
 				'product_type'     => array( $this, 'render_products_type_filter' ),
 				'stock_status'     => array( $this, 'render_products_stock_status_filter' ),
+				'featured_status'  => array( $this, 'render_products_featured_filter' ),
 			)
 		);
 
@@ -443,6 +444,20 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 		}
 
 		$output .= '</select>';
+		echo $output; // WPCS: XSS ok.
+	}
+
+	/**
+	 * Render the featured status filter for the list table.
+	 *
+	 * @since 9.9.0
+	 */
+	protected function render_products_featured_filter() {
+		$current_featured = isset( $_REQUEST['featured_status'] ) ? wc_clean( wp_unslash( $_REQUEST['featured_status'] ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$output           = '<select name="featured_status"><option value="">' . esc_html__( 'Filter by featured status', 'woocommerce' ) . '</option>';
+		$output          .= '<option value="featured" ' . selected( 'featured', $current_featured, false ) . '>' . esc_html__( 'Featured', 'woocommerce' ) . '</option>';
+		$output          .= '<option value="not-featured" ' . selected( 'not-featured', $current_featured, false ) . '>' . esc_html__( 'Not featured', 'woocommerce' ) . '</option>';
+		$output          .= '</select>';
 		echo $output; // WPCS: XSS ok.
 	}
 
@@ -556,6 +571,20 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 				'terms'    => sanitize_title( wp_unslash( $_GET['product_shipping_class'] ) ),
 				'operator' => 'IN',
 			);
+		}
+
+		// Featured status filter.
+		if ( ! empty( $_GET['featured_status'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$featured_status = wc_clean( wp_unslash( $_GET['featured_status'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+			if ( in_array( $featured_status, array( 'featured', 'not-featured' ), true ) ) {
+				$query_vars['tax_query'][] = array(
+					'taxonomy' => 'product_visibility',
+					'field'    => 'name',
+					'terms'    => 'featured',
+					'operator' => 'featured' === $featured_status ? 'IN' : 'NOT IN',
+				);
+			}
 		}
 
 		// Search using CRUD.
