@@ -1,4 +1,4 @@
 Significance: minor
 Type: enhancement
 
-Add "Featured status" filter dropdown to the admin products list table, allowing store owners to filter products by featured or not featured status.
+Add "Featured status" filter dropdown and sortable featured column to the admin products list table, allowing store owners to filter and sort products by featured status.

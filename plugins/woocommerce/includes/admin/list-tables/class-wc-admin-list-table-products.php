@@ -115,6 +115,7 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 			'sku'              => 'sku',
 			'name'             => 'title',
 			'global_unique_id' => 'global_unique_id',
+			'featured'         => 'featured',
 		);
 
 		if ( $this->use_cogs_lookup_column ) {
@@ -545,6 +546,11 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 				$callback = 'DESC' === $order ? 'order_by_global_unique_id_desc_post_clauses' : 'order_by_global_unique_id_asc_post_clauses';
 				add_filter( 'posts_clauses', array( $this, $callback ) );
 			}
+
+			if ( 'featured' === $orderby ) {
+				$callback = 'DESC' === $order ? 'order_by_featured_desc_post_clauses' : 'order_by_featured_asc_post_clauses';
+				add_filter( 'posts_clauses', array( $this, $callback ) );
+			}
 		}
 
 		// Type filtering.
@@ -627,6 +633,8 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 		remove_filter( 'posts_clauses', array( $this, 'filter_downloadable_post_clauses' ) );
 		remove_filter( 'posts_clauses', array( $this, 'filter_virtual_post_clauses' ) );
 		remove_filter( 'posts_clauses', array( $this, 'filter_stock_status_post_clauses' ) );
+		remove_filter( 'posts_clauses', array( $this, 'order_by_featured_asc_post_clauses' ) );
+		remove_filter( 'posts_clauses', array( $this, 'order_by_featured_desc_post_clauses' ) );
 		if ( $this->use_cogs_lookup_column ) {
 			remove_filter( 'posts_clauses', array( $this, 'order_by_cogs_value_asc_post_clauses' ) );
 			remove_filter( 'posts_clauses', array( $this, 'order_by_cogs_value_desc_post_clauses' ) );
@@ -767,6 +775,57 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 			$args['where'] .= $wpdb->prepare( ' AND wc_product_meta_lookup.stock_status=%s ', wc_clean( wp_unslash( $_GET['stock_status'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
 		return $args;
+	}
+
+	/**
+	 * Order by featured status (featured first).
+	 *
+	 * @since 9.9.0
+	 * @param array $args Query args.
+	 * @return array
+	 */
+	public function order_by_featured_asc_post_clauses( $args ) {
+		global $wpdb;
+
+		$args['join'] = $this->append_featured_sorting_join( $args['join'] );
+		$args['orderby'] = " featured_term.term_id IS NULL ASC, $wpdb->posts.ID ASC ";
+		return $args;
+	}
+
+	/**
+	 * Order by featured status (not featured first).
+	 *
+	 * @since 9.9.0
+	 * @param array $args Query args.
+	 * @return array
+	 */
+	public function order_by_featured_desc_post_clauses( $args ) {
+		global $wpdb;
+
+		$args['join'] = $this->append_featured_sorting_join( $args['join'] );
+		$args['orderby'] = " featured_term.term_id IS NULL DESC, $wpdb->posts.ID DESC ";
+		return $args;
+	}
+
+	/**
+	 * Join product_visibility taxonomy tables for featured sorting.
+	 *
+	 * @since 9.9.0
+	 * @param string $sql SQL join.
+	 * @return string
+	 */
+	private function append_featured_sorting_join( $sql ) {
+		global $wpdb;
+
+		if ( ! strstr( $sql, 'featured_term' ) ) {
+			$featured_term = get_term_by( 'name', 'featured', 'product_visibility' );
+			$term_id       = $featured_term ? (int) $featured_term->term_taxonomy_id : 0;
+			$sql          .= $wpdb->prepare(
+				" LEFT JOIN {$wpdb->term_relationships} AS featured_term ON ($wpdb->posts.ID = featured_term.object_id AND featured_term.term_taxonomy_id = %d) ",
+				$term_id
+			);
+		}
+		return $sql;
 	}
 
 	/**

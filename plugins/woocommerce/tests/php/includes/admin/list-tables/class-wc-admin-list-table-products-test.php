@@ -129,4 +129,106 @@ class WC_Admin_List_Table_Products_Test extends WC_Unit_Test_Case {
 		// Cleanup.
 		unset( $GLOBALS['pagenow'] );
 	}
+
+	/**
+	 * Test that the featured column is registered as sortable.
+	 */
+	public function test_featured_column_is_sortable() {
+		$GLOBALS['pagenow'] = 'edit.php'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$list_table = new WC_Admin_List_Table_Products();
+		$columns    = $list_table->define_sortable_columns( array() );
+
+		$this->assertArrayHasKey( 'featured', $columns, 'Featured column should be sortable.' );
+		$this->assertSame( 'featured', $columns['featured'], 'Featured column orderby value should be "featured".' );
+
+		// Cleanup.
+		unset( $GLOBALS['pagenow'] );
+	}
+
+	/**
+	 * Test that sorting by featured places featured products first (ASC).
+	 */
+	public function test_sort_by_featured_asc() {
+		// Create a featured product.
+		$featured_product = WC_Helper_Product::create_simple_product();
+		$featured_product->set_featured( true );
+		$featured_product->save();
+
+		// Create a non-featured product.
+		$regular_product = WC_Helper_Product::create_simple_product();
+		$regular_product->set_featured( false );
+		$regular_product->save();
+
+		$GLOBALS['pagenow'] = 'edit.php'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$list_table = new WC_Admin_List_Table_Products();
+		$query      = new WP_Query(
+			array(
+				'post_type'   => 'product',
+				'post_status' => 'all',
+				'fields'      => 'ids',
+				'orderby'     => 'featured',
+				'order'       => 'ASC',
+			)
+		);
+
+		$results = $query->get_posts();
+
+		// Featured product should come before regular product.
+		$featured_pos = array_search( $featured_product->get_id(), $results, true );
+		$regular_pos  = array_search( $regular_product->get_id(), $results, true );
+
+		$this->assertNotFalse( $featured_pos, 'Featured product should be in results.' );
+		$this->assertNotFalse( $regular_pos, 'Regular product should be in results.' );
+		$this->assertLessThan( $regular_pos, $featured_pos, 'Featured product should appear before non-featured when sorting ASC.' );
+
+		// Cleanup.
+		unset( $GLOBALS['pagenow'] );
+		wp_delete_post( $featured_product->get_id(), true );
+		wp_delete_post( $regular_product->get_id(), true );
+	}
+
+	/**
+	 * Test that sorting by featured DESC places non-featured products first.
+	 */
+	public function test_sort_by_featured_desc() {
+		// Create a featured product.
+		$featured_product = WC_Helper_Product::create_simple_product();
+		$featured_product->set_featured( true );
+		$featured_product->save();
+
+		// Create a non-featured product.
+		$regular_product = WC_Helper_Product::create_simple_product();
+		$regular_product->set_featured( false );
+		$regular_product->save();
+
+		$GLOBALS['pagenow'] = 'edit.php'; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+
+		$list_table = new WC_Admin_List_Table_Products();
+		$query      = new WP_Query(
+			array(
+				'post_type'   => 'product',
+				'post_status' => 'all',
+				'fields'      => 'ids',
+				'orderby'     => 'featured',
+				'order'       => 'DESC',
+			)
+		);
+
+		$results = $query->get_posts();
+
+		// Regular product should come before featured product.
+		$featured_pos = array_search( $featured_product->get_id(), $results, true );
+		$regular_pos  = array_search( $regular_product->get_id(), $results, true );
+
+		$this->assertNotFalse( $featured_pos, 'Featured product should be in results.' );
+		$this->assertNotFalse( $regular_pos, 'Regular product should be in results.' );
+		$this->assertLessThan( $featured_pos, $regular_pos, 'Non-featured product should appear before featured when sorting DESC.' );
+
+		// Cleanup.
+		unset( $GLOBALS['pagenow'] );
+		wp_delete_post( $featured_product->get_id(), true );
+		wp_delete_post( $regular_product->get_id(), true );
+	}
 }
