@@ -5113,6 +5113,12 @@ parameters:
 			path: includes/admin/list-tables/class-wc-admin-list-table-products.php
 
 		-
+			message: '#^Method WC_Admin_List_Table_Products\:\:render_products_featured_filter\(\) has no return type specified\.$#'
+			identifier: missingType.return
+			count: 1
+			path: includes/admin/list-tables/class-wc-admin-list-table-products.php
+
+		-
 			message: '#^Method WC_Admin_List_Table_Products\:\:render_products_stock_status_filter\(\) has no return type specified\.$#'
 			identifier: missingType.return
 			count: 1

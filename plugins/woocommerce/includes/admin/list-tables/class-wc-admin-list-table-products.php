@@ -459,7 +459,7 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 		$output          .= '<option value="featured" ' . selected( 'featured', $current_featured, false ) . '>' . esc_html__( 'Featured', 'woocommerce' ) . '</option>';
 		$output          .= '<option value="not-featured" ' . selected( 'not-featured', $current_featured, false ) . '>' . esc_html__( 'Not featured', 'woocommerce' ) . '</option>';
 		$output          .= '</select>';
-		echo $output; // WPCS: XSS ok.
+		echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 	}
 
 	/**
@@ -787,7 +787,7 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 	public function order_by_featured_asc_post_clauses( $args ) {
 		global $wpdb;
 
-		$args['join'] = $this->append_featured_sorting_join( $args['join'] );
+		$args['join']    = $this->append_featured_sorting_join( $args['join'] );
 		$args['orderby'] = " featured_term.term_id IS NULL ASC, $wpdb->posts.ID ASC ";
 		return $args;
 	}
@@ -802,7 +802,7 @@ class WC_Admin_List_Table_Products extends WC_Admin_List_Table {
 	public function order_by_featured_desc_post_clauses( $args ) {
 		global $wpdb;
 
-		$args['join'] = $this->append_featured_sorting_join( $args['join'] );
+		$args['join']    = $this->append_featured_sorting_join( $args['join'] );
 		$args['orderby'] = " featured_term.term_id IS NULL DESC, $wpdb->posts.ID DESC ";
 		return $args;
 	}
